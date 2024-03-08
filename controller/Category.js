@@ -3,7 +3,7 @@ const { Category } = require("../model/Category");
 exports.fetchCategories = async (req, res)=> {
 
   try{
-    const categories = await Category.find({});
+    const categories = await Category.find({}).exec();
     res.status(200).json(categories)
   }catch(error){
     console.error(error);
@@ -13,7 +13,7 @@ exports.fetchCategories = async (req, res)=> {
 }
 
 exports.createCategory = async (req, res)=> {
-  // this brand we have to get from the API body
+  // this category we have to get from the API body
   const category = new Category(req.body);
   try{
     const doc = await category.save();

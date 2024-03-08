@@ -3,7 +3,7 @@ const { fetchBrands, createBrand } = require("../controller/Brand");
 
 const router = express.Router();
 
-// /brand is already added in base path
+// /brands is already added in base path
 
 router
   .get("/", fetchBrands)
