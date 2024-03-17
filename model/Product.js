@@ -25,7 +25,7 @@ const productSchema = new Schema({
   },
   stock: {
     type: Number,
-    min: [0, "wrong min rating"],
+    min: [0, "wrong min stock"],
     required: true,
     default: 0,
   },
