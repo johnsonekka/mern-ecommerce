@@ -2,13 +2,14 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const userSchema = new Schema({
-  name: { type: String }, // Ensure the name is required
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: Buffer, required: true },
   role: { type: String, required: true, default: "user" },
   addresses: { type: [Schema.Types.Mixed] },
-  // TODO: We can make a separate Schema for this
-  orders: { type: [Schema.Types.Mixed] },
+  // TODO: we can make separate schema for this 
+  name: { type: String }, // Ensure the name is required
+  salt: Buffer
+
 });
 
 const virtual = userSchema.virtual("id");
