@@ -1,12 +1,12 @@
 const { Order } = require("../model/Order");
 
 exports.fetchOrdersByUser = async (req, res) => {
-  // const { user } = req.query;
+  const { id } = req.user;
   try {
-    const orders = await Order.find({})
+    const orders = await Order.find({user: id})
     res.status(200).json(orders);
   } catch (error) {
-    res.status(400).json({ error: "Bad Request Buddy" });
+    res.status(400).json(error);
   };
 };
 

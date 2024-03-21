@@ -9,7 +9,7 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const JwtStrategy = require("passport-jwt").Strategy;
 const ExtractJwt = require("passport-jwt").ExtractJwt;
-
+const cookieParser = require("cookie-parser");
 const productsRouter = require("./routes/Product");
 const brandsRouter = require("./routes/Brand");
 const categoriesRouter = require("./routes/Category");
@@ -18,16 +18,19 @@ const authRouter = require("./routes/Auth");
 const cartRouter = require("./routes/Cart");
 const ordersRouter = require("./routes/Order");
 const { User } = require("./model/User");
-const { isAuth, sanitizeUser } = require("./services/common");
+const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
 
 const SECRET_KEY = "SECRET_KEY"; //TODO: change this to a secret key
+
 // JWT options
 const opts = {};
-opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
+opts.jwtFromRequest = cookieExtractor;
 opts.secretOrKey = SECRET_KEY; //TODO: should not be in code;
 
 //middlewares
 
+server.use(express.static('build'));
+server.use(cookieParser());
 server.use(
   session({
     secret: "keyboard cat",
@@ -44,21 +47,23 @@ server.use(
 );
 server.use(express.json()); // to parse req.body
 server.use("/products", isAuth(), productsRouter.router); //we can alse use JWT token for client-only auth
-server.use("/brands", isAuth(),brandsRouter.router);
+server.use("/brands", isAuth(), brandsRouter.router);
 server.use("/categories", isAuth(), categoriesRouter.router);
-server.use("/users", isAuth(),usersRouter.router);
+server.use("/users", isAuth(), usersRouter.router);
 server.use("/auth", authRouter.router);
-server.use("/cart", isAuth(),cartRouter.router);
-server.use("/orders", isAuth(),ordersRouter.router);
+server.use("/cart", isAuth(), cartRouter.router);
+server.use("/orders", isAuth(), ordersRouter.router);
 
 //Passport Strategies
 passport.use(
   "local",
-  new LocalStrategy(async function (username, password, done) {
+  new LocalStrategy(
+    {usernameField: 'email'},
+    async function (email, password, done) {
     //by default , the username is used for field name
     try {
-      const user = await User.findOne({ email: username });
-      console.log(username, password, user);
+      const user = await User.findOne({ email: email });
+      console.log(email, password, user);
       if (!user) {
         return done(null, false, { message: "invalid credentials" }); //for safety
       }
@@ -76,7 +81,7 @@ passport.use(
             // TODO: We will make addresses independent of the login
           }
           const token = jwt.sign(sanitizeUser(user), SECRET_KEY);
-          done(null, token); // this lines sends to serializer
+          done(null, {token}); // this lines sends to serializer
         }
       );
     } catch (err) {
@@ -90,7 +95,7 @@ passport.use(
   new JwtStrategy(opts, async function (jwt_payload, done) {
     console.log({ jwt_payload });
     try {
-      const user = await User.findOne({ id: jwt_payload.sub });
+      const user = await User.findById( jwt_payload.id );
       if (user) {
         return done(null, sanitizeUser(user)); //this calls serializer
       } else {

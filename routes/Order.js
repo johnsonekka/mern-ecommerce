@@ -6,7 +6,7 @@ const router = express.Router();
 // /orders is already added in base path
 
 router
-  .get("/user/:userId", fetchOrdersByUser)
+  .get("/own", fetchOrdersByUser)
   .post("/", createOrder)
   .delete('/:id', deleteOrder)
   .patch('/:id', updateOrder)
