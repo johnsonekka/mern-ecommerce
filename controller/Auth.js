@@ -29,7 +29,7 @@ exports.createUser = async (req, res) => {
               httpOnly: true,
             })
             .status(201)
-            .json(token);
+            .json({id:user.id, role:user.role});
           }
         });
       }
@@ -50,7 +50,11 @@ exports.loginUser = async (req, res) => {
   .json(req.user.token);
 };
 
-exports.checkUser = async (req, res) => {
+exports.checkAuth = async (req, res) => {
   // this user we have to get from the API body
-  res.json({ status: "success", user: req.user });
+  if(req.user){
+    res.json(req.user );
+  }else {
+    res.sendStatus(401);
+  }
 };
