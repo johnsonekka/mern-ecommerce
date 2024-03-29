@@ -45,6 +45,7 @@ server.use(
     exposedHeaders: ["X-Total-Count"],
   })
 );
+server.use(express.raw({type: 'application/json'}))
 server.use(express.json()); // to parse req.body
 server.use("/products", isAuth(), productsRouter.router); //we can alse use JWT token for client-only auth
 server.use("/brands", isAuth(), brandsRouter.router);
@@ -121,6 +122,80 @@ passport.deserializeUser(function (user, cb) {
     return cb(null, user);
   });
 });
+
+
+//Payments
+
+// This is your test secret API key.
+const stripe = require("stripe")('sk_test_51OyRImSHGmInAHPa407icqKe6W9cNX65w63V7gFsx9KRBk4rLFt6dFTs8FVgHRkIFWhSP3ve4S054XqBLyEJLvsj00kV5o05VM');
+
+
+
+server.post("/create-payment-intent", async (req, res) => {
+  const { totalAmount } = req.body;
+
+  // Create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: totalAmount*100, //for decimal compensation
+    currency: "inr",
+    automatic_payment_methods: {
+      enabled: true,
+    },
+  });
+
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+});
+
+//Webhook
+
+//TODO: we will capture actual order after deploying out server live on public URL
+const endpointSecret = 'whsec_d3e2be96d51105780a35154e86e024427c7242c99617b733146c26b2d15cdeff';
+
+server.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
+  let event = request.body;
+  // Only verify the event if you have an endpoint secret defined.
+  // Otherwise use the basic event deserialized with JSON.parse
+  if (endpointSecret) {
+    // Get the signature sent by Stripe
+    const signature = request.headers['stripe-signature'];
+    try {
+      event = stripe.webhooks.constructEvent(
+        request.body,
+        signature,
+        endpointSecret
+      );
+    } catch (err) {
+      console.log(`⚠️  Webhook signature verification failed.`, err.message);
+      return response.sendStatus(400);
+    }
+  }
+
+  // Handle the event
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntent = event.data.object;
+      console.log(`PaymentIntent for ${paymentIntent.amount} was successful!`);
+      // Then define and call a method to handle the successful payment intent.
+      // handlePaymentIntentSucceeded(paymentIntent);
+      break;
+    case 'payment_method.attached':
+      const paymentMethod = event.data.object;
+      // Then define and call a method to handle the successful attachment of a PaymentMethod.
+      // handlePaymentMethodAttached(paymentMethod);
+      break;
+    default:
+      // Unexpected event type
+      console.log(`Unhandled event type ${event.type}.`);
+  }
+
+  // Return a 200 response to acknowledge receipt of the event
+  response.send();
+});
+
+
+
 
 main().catch((err) => console.log(err));
 
