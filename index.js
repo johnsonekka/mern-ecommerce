@@ -205,9 +205,6 @@ server.post("/create-payment-intent", async (req, res) => {
     automatic_payment_methods: {
       enabled: true,
     },
-    use_stripe_sdk: {
-      type: 'three_d_secure',
-    },
     metadata:{
       orderId 
     }
