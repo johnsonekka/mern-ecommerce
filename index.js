@@ -21,6 +21,8 @@ const ordersRouter = require("./routes/Order");
 const { User } = require("./model/User");
 const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
 const path = require('path');
+const { Order } = require('./model/Order');
+
 
 
 
@@ -32,7 +34,7 @@ const endpointSecret = process.env.ENDPOINT_SECRET;
 server.post(
   "/webhook",
   express.raw({ type: "application/json" }),
-  (request, response) => {
+  async (request, response) => {
     let event = request.body;
     // Only verify the event if you have an endpoint secret defined.
     // Otherwise use the basic event deserialized with JSON.parse
@@ -55,6 +57,11 @@ server.post(
     switch (event.type) {
       case "payment_intent.succeeded":
         const paymentIntent = event.data.object;
+
+        const order = await Order.findById(paymentIntentSucceeded.metadata.orderId)
+        order.paymentStatus = 'received';
+        await order.save();
+
         console.log(
           `PaymentIntent for ${paymentIntent.amount} was successful!`
         );
